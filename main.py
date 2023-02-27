@@ -2,7 +2,7 @@ import pygame
 
 
 class Character(pygame.sprite.Sprite):
-    def __init__(self, pos, speed, platform_group, *group):
+    def __init__(self, pos, speed, platform_group, platform2_group, *group):
         super().__init__(*group)
         self.speed = speed
         self.image = pygame.Surface((20, 20))
@@ -11,20 +11,28 @@ class Character(pygame.sprite.Sprite):
         self.rect.x = pos[0]
         self.rect.y = pos[1]
         self.platform_group = platform_group
-
-    def walk(self, event):
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_a:
-            self.rect.x -= self.speed
-        if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
-            self.rect.x += self.speed
+        self.platform2_group = platform2_group
 
     def fall(self):
         if pygame.sprite.spritecollideany(self, self.platform_group) is None:
-            self.rect.y += self.speed
-
-    def update(self, *args):
-        if args:
-            self.walk(args[0])
+            if pygame.sprite.spritecollideany(self, self.platform2_group) is None:
+                self.rect.y += self.speed
+        else:
+            if pygame.key.get_pressed()[pygame.K_a]:
+                self.rect.x -= self.speed
+            if pygame.key.get_pressed()[pygame.K_d]:
+                self.rect.x += self.speed
+        if pygame.sprite.spritecollideany(self, self.platform2_group) is None:
+            pass
+        else:
+            if pygame.key.get_pressed()[pygame.K_w]:
+                self.rect.y -= self.speed
+            if pygame.key.get_pressed()[pygame.K_s]:
+                self.rect.y += self.speed
+            if pygame.key.get_pressed()[pygame.K_a]:
+                self.rect.x -= self.speed
+            if pygame.key.get_pressed()[pygame.K_d]:
+                self.rect.x += self.speed
 
 
 class Platform(pygame.sprite.Sprite):
@@ -32,6 +40,16 @@ class Platform(pygame.sprite.Sprite):
         super().__init__(*group)
         self.image = pygame.Surface((50, 10))
         self.image.fill((190, 190, 190))
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+
+
+class Platform2(pygame.sprite.Sprite):
+    def __init__(self, pos, *group):
+        super().__init__(*group)
+        self.image = pygame.Surface((10, 50))
+        self.image.fill((255, 0, 0))
         self.rect = self.image.get_rect()
         self.rect.x = pos[0]
         self.rect.y = pos[1]
@@ -50,11 +68,15 @@ def game(screen):
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    if hero is None:
-                        hero = Character(event.pos, 10, platform_group, player_group, all_sprites)
+                    if pygame.key.get_pressed()[pygame.K_LCTRL] or pygame.key.get_pressed()[pygame.K_RCTRL]:
+                        print('+')
+                        Platform2(event.pos, platform2_group, all_sprites)
                     else:
-                        hero.rect.x = event.pos[0]
-                        hero.rect.y = event.pos[1]
+                        if hero is None:
+                            hero = Character(event.pos, 2, platform_group,platform2_group, player_group, all_sprites)
+                        else:
+                            hero.rect.x = event.pos[0]
+                            hero.rect.y = event.pos[1]
                 if event.button == 3:
                     Platform(event.pos, platform_group, all_sprites)
             player_group.update(event)
@@ -74,5 +96,6 @@ if __name__ == '__main__':
     clock = pygame.time.Clock()
     all_sprites = pygame.sprite.Group()
     platform_group = pygame.sprite.Group()
+    platform2_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
     game(screen)
