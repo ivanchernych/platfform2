@@ -1,74 +1,78 @@
 import pygame
-import os
-import sys
 
 
-def load_image(name, colorkey=None):
-    fullname = os.path.join('date', name)
-    # если файл не существует, то выходим
-    if not os.path.isfile(fullname):
-        print(f"Файл с изображением '{fullname}' не найден")
-        sys.exit()
-    image = pygame.image.load(fullname)
-    if colorkey is not None:
-        image = image.convert()
-        if colorkey == -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-    else:
-        image = image.convert_alpha()
-    return image
-
-
-class Game_over(pygame.sprite.Sprite):
-    def __init__(self, image, group):
-        super().__init__(group)
-        self.image = image
+class Character(pygame.sprite.Sprite):
+    def __init__(self, pos, speed, platform_group, *group):
+        super().__init__(*group)
+        self.speed = speed
+        self.image = pygame.Surface((20, 20))
+        self.image.fill((0, 0, 255))
         self.rect = self.image.get_rect()
-        self.rect = pygame.Rect(-600, 0, 600, 300)
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+        self.platform_group = platform_group
 
-    def drive(self):
-        if self.rect.x == 0:
-            self.rect.x = 0
-        else:
-            self.rect.x += 8
+    def walk(self, event):
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_a:
+            self.rect.x -= self.speed
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
+            self.rect.x += self.speed
 
-    def update(self):
-        self.drive()
+    def fall(self):
+        if pygame.sprite.spritecollideany(self, self.platform_group) is None:
+            self.rect.y += self.speed
+
+    def update(self, *args):
+        if args:
+            self.walk(args[0])
 
 
-class Game:
-    def __init__(self, size):
-        self.screen = pygame.display.set_mode(size)
-        self.start_game()
+class Platform(pygame.sprite.Sprite):
+    def __init__(self, pos, *group):
+        super().__init__(*group)
+        self.image = pygame.Surface((50, 10))
+        self.image.fill((190, 190, 190))
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
 
-    def start_game(self):
-        game_over_group = pygame.sprite.Group()
-        image = load_image('gameover.png', 1)
-        screen = pygame.display.set_mode(size)
-        Game_over(image, game_over_group)
 
-        FPS = 60
-        tick = 0
-        clock = pygame.time.Clock()
-
-        run = True
-        while run:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-            screen.fill((0, 0, 255))
-
-            tick += 1
-            clock.tick(FPS)
-
-            game_over_group.update()
-            game_over_group.draw(self.screen)
-            pygame.display.flip()
-        pygame.quit()
+def game(screen):
+    # создадим группу, содержащую все спрайты
+    FPS = 60
+    tick = 0
+    clock = pygame.time.Clock()
+    hero = None
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if hero is None:
+                        hero = Character(event.pos, 10, platform_group, player_group, all_sprites)
+                    else:
+                        hero.rect.x = event.pos[0]
+                        hero.rect.y = event.pos[1]
+                if event.button == 3:
+                    Platform(event.pos, platform_group, all_sprites)
+            player_group.update(event)
+        screen.fill((0, 0, 0))
+        all_sprites.draw(screen)
+        if hero:
+            hero.fall()
+        tick += 1
+        clock.tick(FPS)
+        pygame.display.flip()
 
 
 if __name__ == '__main__':
     pygame.init()
-    size = width, height, = 600, 300
-    Game(size)
+    size = width, height = 500, 500
+    screen = pygame.display.set_mode(size)
+    clock = pygame.time.Clock()
+    all_sprites = pygame.sprite.Group()
+    platform_group = pygame.sprite.Group()
+    player_group = pygame.sprite.Group()
+    game(screen)
