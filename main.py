@@ -28,9 +28,10 @@ class Game_over(pygame.sprite.Sprite):
         self.rect = pygame.Rect(-600, 0, 600, 300)
 
     def drive(self):
-        self.rect.x += 8
         if self.rect.x == 0:
-            self.rect.x = -600
+            self.rect.x = 0
+        else:
+            self.rect.x += 8
 
     def update(self):
         self.drive()
